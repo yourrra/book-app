@@ -3,6 +3,7 @@ import onChange from "on-change";
 import { Header } from "../../components/header/header";
 import { Search } from "../../components/search/search";
 import { CardList } from "../../components/card-list/card-list";
+import { PaginationButton } from "../../components/pagination-button/paginationButton";
 
 export class MainView extends AbstractView {
   state = {
@@ -11,6 +12,7 @@ export class MainView extends AbstractView {
     loading: false,
     searchQuery: undefined,
     offset: 0,
+    limit: 9,
   };
 
   constructor(appState) {
@@ -21,9 +23,14 @@ export class MainView extends AbstractView {
     this.setTitle("Поиск книг");
   }
 
+  destroy() {
+    onChange.unsubscribe(this.appState);
+    onChange.unsubscribe(this.state);
+  }
+
   appStateHook(path) {
     if (path === "favorites") {
-      console.log(path);
+      this.render();
     }
   }
 
@@ -32,33 +39,48 @@ export class MainView extends AbstractView {
       this.state.loading = true;
       const data = await this.loadList(
         this.state.searchQuery,
-        this.state.offset
+        this.state.offset,
+        this.state.limit
       );
       this.state.loading = false;
-      console.log(data);
       this.state.numFound = data.numFound;
       this.state.list = data.docs;
+      // console.log(data);
     }
     if (path === "list" || path === "loading") {
       this.render();
     }
+    if (path === "offset") {
+      const data = await this.loadList(
+        this.state.searchQuery,
+        this.state.offset,
+        this.state.limit
+      );
+      this.state.loading = false;
+      this.state.numFound = data.numFound;
+      this.state.list = data.docs;
+      this.render();
+    }
   }
 
-  async loadList(q, offset) {
+  async loadList(q, offset, limit) {
     const res = await fetch(
-      `https://openlibrary.org/search.json?q=${q}&offset=${offset}`
+      `https://openlibrary.org/search.json?q=${q}&offset=${offset}&limit=${limit}`
     );
     return res.json();
   }
 
   render() {
     const main = document.createElement("div");
+    main.innerHTML = `
+    <h1 class='card_list__h1'>Найдено книг - ${this.state.numFound}</h1>
+ `;
     main.append(new Search(this.state).render());
     main.append(new CardList(this.appState, this.state).render());
-    this.app.innerHTML = "";
+    main.append(new PaginationButton(this.state).render());
+    this.app.innerHTML = ``;
     this.app.append(main);
     this.renderHeader();
-    this.appState.favorites.push("d");
   }
 
   renderHeader() {

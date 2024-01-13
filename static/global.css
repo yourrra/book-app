@@ -9,3 +9,8 @@ body {
   line-height: 20px;
   color: var(--black);
 }
+
+#root {
+  max-width: 800px;
+  margin: 0 auto;
+}
